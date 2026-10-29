@@ -1,0 +1,43 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+public class DatabaseInsertExample {
+    private static final String JDBC_URL = "jdbc:mysql://localhost:3306/mydatabase";
+    private static final String USERNAME = "root";
+    private static final String PASSWORD = "password";
+
+    public static void main(String[] args) {
+        String createTableQuery = "CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), email VARCHAR(255))";
+        String insertQuery = "INSERT INTO users (name, email) VALUES (?, ?)";
+
+        try (Connection connection = DriverManager.getConnection(JDBC_URL, USERNAME, PASSWORD);
+             Statement createTableStmt = connection.createStatement();
+             PreparedStatement insertStmt = connection.prepareStatement(insertQuery)) {
+            
+            // 1. Create the table using a standard Statement (no parameters needed)
+            createTableStmt.execute(createTableQuery);
+
+            // 2. Stage the first record
+            insertStmt.setString(1, "John Doe");
+            insertStmt.setString(2, "johndoe@example.com");
+            insertStmt.addBatch(); // Adds this query to the batch
+
+            // 3. Stage the second record
+            insertStmt.setString(1, "Jane Doe");
+            insertStmt.setString(2, "janedoe@example.com");
+            insertStmt.addBatch(); // Adds this query to the batch
+
+            // 4. Execute all staged inserts in a single database round-trip
+            int[] rowsAffected = insertStmt.executeBatch();
+            
+            System.out.println("Data inserted successfully. Rows added: " + rowsAffected.length);
+
+        } catch (SQLException e) {
+            System.err.println("Database execution failed: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
